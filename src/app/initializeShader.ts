@@ -53,7 +53,7 @@ export async function initializeShader():
         throw new Error("Failed to acquire canvas context.");
     }
 
-    
+    let x = 2;
     const canvasFormat = navigator.gpu.getPreferredCanvasFormat();
     context.configure({
     device: device,
