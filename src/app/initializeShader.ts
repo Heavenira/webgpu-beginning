@@ -6,11 +6,11 @@
  * @returns A `Promise` containing necessary constants needed for the next drawing steps.
  */
 export async function initializeShader():
-    Promise<{
-        canvas: HTMLCanvasElement;
-        adapter: GPUAdapter;
-        device: GPUDevice;
-    }> {
+Promise<{
+    canvas: HTMLCanvasElement;
+    adapter: GPUAdapter;
+    device: GPUDevice;
+}> {
     
 
     /**
@@ -113,13 +113,12 @@ export async function initializeShader():
      * These are referred to as "attachments". Won't need them here, but it's worth mentioning.
      */
 
-    const pass = encoder.beginRenderPass({
+    const pass: GPURenderPassEncoder = encoder.beginRenderPass({
         colorAttachments: [gpuColorAttachment]
     });
     // End the render pass by adding the following call immediately after beginRenderPass():
     pass.end();
     // It's important to know that simply making these calls does not cause the GPU to actually do anything. They're just recording commands for the GPU to do later.
-
 
 
     if (false) {
@@ -133,15 +132,12 @@ export async function initializeShader():
         This is why it is practical to inline the .finish() command below.`
     }
 
-    
-
-
 
     /**
      * The queue's submit() method takes in an array of command buffers.
      * We are only dealing with ONE though!!!!!
      * 
-     * Anyhow once you execute this, JavaScript takes the wheel and overwrites the canvas.
+     * Anyhow when we execute this, JavaScript takes the wheel and overwrites the canvas.
      */ 
     device.queue.submit([encoder.finish()]);
 
