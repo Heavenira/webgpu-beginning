@@ -4,4 +4,4 @@ async function main() {
     await gameOfLife();
 }
 
-main();
+main(); 

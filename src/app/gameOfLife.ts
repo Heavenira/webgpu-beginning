@@ -1,6 +1,6 @@
 import basicShader from "../shaders/basic.wgsl"
 
-
+console.log("howdy");
 /**
  * @async Make sure to use `await` when calling this function.
  * @returns Creates Conway's Game of Life.
@@ -96,6 +96,7 @@ export async function gameOfLife() {
            0.8,  0.8,
           -0.8,  0.8,
     ]);
+    
 
     /** Buffer used to hold vertices. Immutable. The data will be initialized to zero. Methods populate the data. */
 
