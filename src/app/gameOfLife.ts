@@ -1,6 +1,7 @@
 import basicShader from "../shaders/basic.wgsl"
 
 console.log("howdy");
+
 /**
  * @async Make sure to use `await` when calling this function.
  * @returns Creates Conway's Game of Life.
