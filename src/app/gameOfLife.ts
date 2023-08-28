@@ -97,11 +97,7 @@ export async function gameOfLife() {
           -0.8,  0.8,
     ]);
 
-    /**
-     * Buffer used to hold vertices. This is immutable.
-     * 
-     * The data will be initialized to zero. Methods populate the data.
-     */
+    /** Buffer used to hold vertices. Immutable. The data will be initialized to zero. Methods populate the data. */
 
     const vertexBuffer: GPUBuffer = device.createBuffer({
         label: "Cell vertices",
@@ -112,6 +108,20 @@ export async function gameOfLife() {
     // Place memory in the vertexBuffer address.
 
     device.queue.writeBuffer(vertexBuffer, /*bufferOffset=*/0, vertices);
+
+    /** The dimensions of the Game of Life. */
+
+    const GRID_SIZE = 4;
+
+    // Create a uniform buffer that describes the grid.
+    const uniformArray = new Float32Array([GRID_SIZE, GRID_SIZE]);
+    /** Buffer used to hold vertices. Immutable. The data will be initialized to zero. Methods populate the data. */
+    const uniformBuffer = device.createBuffer({
+        label: "Grid Uniforms",
+        size: uniformArray.byteLength,
+        usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+    });
+    device.queue.writeBuffer(uniformBuffer, 0, uniformArray);
 
     /** The vertex data structure. Used to navigate memory. */
 
