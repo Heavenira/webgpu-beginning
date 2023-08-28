@@ -1,11 +1,15 @@
 {
     "scripts": {
-        "build": "esbuild src/app/main.ts --outfile=dist/main.js --target=es2022 --minify --bundle --loader:.wgsl=text"
+        "serve": "browser-sync start --server --files \"public/*.html\" --directory --port 8080 --no-notify",
+        "watch": "esbuild src/app/main.ts --outfile=dist/main.js --target=es2022 --minify --bundle --loader:.wgsl=text --watch",
+        "start": "concurrently \"npm run watch\" \"npm run serve\""
     },
     "dependencies": {
         "@webgpu/types": "^0.1.34"
     },
     "devDependencies": {
-        "@types/node": "^20.3.2"
+        "@types/node": "^20.3.2",
+        "browser-sync": "^2.29.3",
+        "concurrently": "^8.2.1"
     }
 }
