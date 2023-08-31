@@ -1,7 +1,8 @@
-import { gameOfLife } from './gameOfLife';
+import * as gameOfLife from './gameOfLife';
+import * as initial from './initializeShader';
 
 async function main() {
-    await gameOfLife();
+    await gameOfLife.gameOfLife();
 }
 
 main(); 

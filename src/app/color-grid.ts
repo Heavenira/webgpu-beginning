@@ -1,16 +1,7 @@
 import gridShader from "../shaders/grid.wgsl"
-import computeShader from "../shaders/compute.wgsl"
 
 /** Width and height of Conway's Game of Life. */
 const GRID_SIZE = 16;
-const UPDATE_INTERVAL = 500; // Update every 200ms (5 times/sec)
-let step = 0; // Track how many simulation steps have been run
-
-
-const WORKGROUP_SIZE = 8;
-
-
-
 
 /**
  * @async Make sure to use `await` when calling this function.
@@ -168,6 +159,22 @@ export async function gameOfLife() {
         }
     });
 
+    /** Resource group that binds stuff (ie. uniforms, textures or samplers). This is an opaque, immutable handle. */
+    const bindGroup = device.createBindGroup({
+        label: "Cell renderer bind group",
+        /**
+         * Aha!! THIS is where the `group(0)` in WGSL comes into play.
+         * 
+         * The 0 corresponds to `group(0)`, the `.getBindGroupLayout(0)` acquires this
+         */
+        layout: cellPipeline.getBindGroupLayout(0),
+        entries: [{
+            /** Corresponds with the @binding() value you entered in the shader. In this case, 0. */
+            binding: 0,
+            /** The resource that you want to expose to the variable. */
+            resource: { buffer: uniformBuffer }
+        }],
+    });
 
 
     // #endregion
@@ -180,6 +187,13 @@ export async function gameOfLife() {
 
     // #region
 
+    /**
+     * Issues GPU commands. Here we are going to create a Render Pass.
+     * 
+     * (Compute can run too. Your choice.)
+     */
+    const encoder: GPUCommandEncoder = device.createCommandEncoder();
+
 
     /** This draws color on each pass. Pretty standard. */
     const gpuColorAttachment: GPURenderPassColorAttachment = {
@@ -191,131 +205,41 @@ export async function gameOfLife() {
         clearValue: { r: 0, g: 0, b: 0.4, a: 1 },
     }
 
-
-    // Create an array representing the active state of each cell.
-    const cellStateArray = new Uint32Array(GRID_SIZE * GRID_SIZE);
-
-
-    // Create two storage buffers to hold the cell state.
-    const cellStateStorage = [
-        device.createBuffer({
-            label: "Cell State A",
-            size: cellStateArray.byteLength,
-            usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST,
-        }),
-        device.createBuffer({
-            label: "Cell State B",
-            size: cellStateArray.byteLength,
-            usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST,
-        })
-    ];
-
-    // Mark every third cell of the first grid as active.
-    for (let i = 0; i < cellStateArray.length; i+=3) {
-        cellStateArray[i] = 1;
-    }
-    device.queue.writeBuffer(cellStateStorage[0], 0, cellStateArray);
-    
-    // Mark every other cell of the second grid as active.
-    for (let i = 0; i < cellStateArray.length; i++) {
-        cellStateArray[i] = i % 2;
-    }
-    device.queue.writeBuffer(cellStateStorage[1], 0, cellStateArray);
-
-
-    // Mark every third cell of the grid as active.
-    for (let i = 0; i < cellStateArray.length; i += 3) {
-        cellStateArray[i] = 1;
-    }
-
-    // Create the compute shader that will process the simulation.
-    const simulationShaderModule = device.createShaderModule({
-        label: "Game of Life simulation shader",
-        code: computeShader
+    /**
+     * `pass` occurs when all drawing operations in WebGPU happen.
+     * 
+     * For more advanced uses, you could have multiple render passes (ie. depth, normal).
+     * 
+     * These are referred to as "attachments". Won't need them here, but it's worth mentioning.
+     * 
+     * Put this to work immediately!
+     */
+    const pass: GPURenderPassEncoder = encoder.beginRenderPass({
+        colorAttachments: [gpuColorAttachment]
     });
 
+    // `pass`'s jobs should go between its definition and `pass.end`.
+    {
+        pass.setPipeline(cellPipeline);
+        pass.setVertexBuffer(0, vertexBuffer);
 
+        pass.setBindGroup(0, bindGroup); // New line!
 
-    /** Resource group that binds stuff (ie. uniforms, textures or samplers). This is an opaque, immutable handle. */
-    const bindGroups = [
-        device.createBindGroup({
-          label: "Cell renderer bind group A",
-          layout: cellPipeline.getBindGroupLayout(0),
-          entries: [{
-            binding: 0,
-            resource: { buffer: uniformBuffer }
-          }, {
-            binding: 1,
-            resource: { buffer: cellStateStorage[0] }
-          }],
-        }),
-         device.createBindGroup({
-          label: "Cell renderer bind group B",
-          layout: cellPipeline.getBindGroupLayout(0),
-          entries: [{
-            binding: 0,
-            resource: { buffer: uniformBuffer }
-          }, {
-            binding: 1,
-            resource: { buffer: cellStateStorage[1] }
-          }],
-        })
-    ];
-
-    function updateGrid() {
-        step++;
         
-        /**
-         * Issues GPU commands. Here we are going to create a Render Pass.
-         * 
-         * (Compute can run too. Your choice.)
-         */
-        const encoder: GPUCommandEncoder = device.createCommandEncoder();
-
-        /**
-         * `pass` occurs when all drawing operations in WebGPU happen.
-         * 
-         * For more advanced uses, you could have multiple render passes (ie. depth, normal).
-         * 
-         * These are referred to as "attachments". Won't need them here, but it's worth mentioning.
-         * 
-         * Put this to work immediately!
-         */
-
-        const pass = encoder.beginRenderPass({
-            colorAttachments: [{
-              view: context!.getCurrentTexture().createView(),
-              loadOp: "clear",
-              clearValue: { r: 0, g: 0, b: 0.4, a: 1.0 },
-              storeOp: "store",
-            }]
-          });
-
-        // `pass`'s jobs should go between its definition and `pass.end`.
-        {
-            pass.setPipeline(cellPipeline);
-            pass.setVertexBuffer(0, vertexBuffer);
-
-            pass.setBindGroup(0, bindGroups[step % 2]); // New line!
-
-            
-            pass.draw(vertices.length / 2, GRID_SIZE * GRID_SIZE); // 6 vertices
-            // End the render pass by adding the following call immediately after beginRenderPass():
-            pass.end();
-        }
-        // It's important to know that simply making these calls does not cause the GPU to actually do anything. They're just recording commands for the GPU to do later.
-
-
-        /**
-         * The queue's submit() method takes in an array of command buffers.
-         * We are only dealing with ONE though!!!!!
-         * 
-         * Anyhow when we execute this, JavaScript takes the wheel and overwrites the canvas.
-         */ 
-        device.queue.submit([encoder.finish()]);
+        pass.draw(vertices.length / 2, GRID_SIZE * GRID_SIZE); // 6 vertices
+        // End the render pass by adding the following call immediately after beginRenderPass():
+        pass.end();
     }
-    // Move all of our rendering code into a function
-    setInterval(updateGrid, UPDATE_INTERVAL)
+    // It's important to know that simply making these calls does not cause the GPU to actually do anything. They're just recording commands for the GPU to do later.
+
+
+    /**
+     * The queue's submit() method takes in an array of command buffers.
+     * We are only dealing with ONE though!!!!!
+     * 
+     * Anyhow when we execute this, JavaScript takes the wheel and overwrites the canvas.
+     */ 
+    device.queue.submit([encoder.finish()]);
 
     // #endregion
 }

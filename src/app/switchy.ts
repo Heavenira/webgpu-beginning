@@ -1,13 +1,10 @@
 import gridShader from "../shaders/grid.wgsl"
-import computeShader from "../shaders/compute.wgsl"
 
 /** Width and height of Conway's Game of Life. */
 const GRID_SIZE = 16;
+
 const UPDATE_INTERVAL = 500; // Update every 200ms (5 times/sec)
 let step = 0; // Track how many simulation steps have been run
-
-
-const WORKGROUP_SIZE = 8;
 
 
 
@@ -227,12 +224,6 @@ export async function gameOfLife() {
     for (let i = 0; i < cellStateArray.length; i += 3) {
         cellStateArray[i] = 1;
     }
-
-    // Create the compute shader that will process the simulation.
-    const simulationShaderModule = device.createShaderModule({
-        label: "Game of Life simulation shader",
-        code: computeShader
-    });
 
 
 

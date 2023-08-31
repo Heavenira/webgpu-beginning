@@ -1,6 +1,6 @@
 {
     "scripts": {
-        "serve": "browser-sync start --server --files \"public/*.html\" --directory --port 8080 --no-notify",
+        "serve": "browser-sync start --server --files \"public/*.html\" --startPath \"/public/index.html\" --directory --port 8080 --no-notify",
         "watch": "esbuild src/app/main.ts --outfile=dist/main.js --target=es2022 --minify --bundle --loader:.wgsl=text --watch",
         "start": "concurrently \"npm run watch\" \"npm run serve\""
     },
